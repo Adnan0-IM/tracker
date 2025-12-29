@@ -1,0 +1,21 @@
+FROM oven/bun:1 as base
+WORKDIR /usr/src/app
+
+# Install dependencies
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build application
+RUN bun build --target=bun --production --outdir=dist ./src/server.ts
+
+# Production stage
+FROM oven/bun:1-slim
+WORKDIR /usr/src/app
+COPY --from=base /usr/src/app/dist ./
+COPY --from=base /usr/src/app/public ./public
+
+EXPOSE 3000
+CMD ["bun", "server.js"]

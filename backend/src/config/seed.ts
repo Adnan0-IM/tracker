@@ -1,51 +1,86 @@
-import type postgres from "postgres";
+import "dotenv/config";
+import {
+  usersTable,
+  budgetsTable,
+  categoriesTable,
+  expenseTable,
+} from "../db/schema";
 
-export const seed = async (db: ReturnType<typeof postgres>) => {
+import { db } from "../db/db";
+export const seed = async () => {
   try {
     // 1) Demo user (use env to override)
+    const name = process.env.SEED_USER_NAME ?? "Demo User";
     const email = process.env.SEED_USER_EMAIL ?? "demo@example.com";
     const password = process.env.SEED_USER_PASSWORD ?? "demo123"; // replace with a hash in production
 
-    const userRows = await db`
-    INSERT INTO "Users" (email, password)
-    VALUES (${email}, ${password})
-    ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password
-    RETURNING id
-  `;
+    const [u] = await db
+      .insert(usersTable)
+      .values({
+        name,
+        email,
+        password,
+      })
+      .returning();
+
     // If your client returns objects:
-    const userId = userRows[0]?.id;
-    // const userId = userRows[0];
+    const userId = u?.id;
+    if (!userId) {
+      throw new Error("Failed to create or retrieve demo user");
+    }
 
     // 2) Categories
-    await db.unsafe(`
-    INSERT INTO "Category"(id, name, icon, color) VALUES
-      ('groceries', 'Groceries', '🛒', '#22C55E'),
-      ('transport', 'Transport', '🚗', '#3B82F6'),
-      ('rent',      'Rent',      '🏠', '#F43F5E'),
-      ('utilities', 'Utilities', '💡', '#A855F7'),
-      ('entertain', 'Entertainment', '🎬', '#F59E0B')
-    ON CONFLICT (id) DO UPDATE
-      SET name = EXCLUDED.name, icon = EXCLUDED.icon, color = EXCLUDED.color;
-  `);
+    await db.insert(categoriesTable).values([
+      { id: "groceries", name: "Groceries", icon: "🛒", color: "#34D399" },
+      { id: "transport", name: "Transport", icon: "🚗", color: "#3B82F6" },
+      { id: "rent", name: "Rent", icon: "🏠", color: "#F43F5E" },
+      { id: "utilities", name: "Utilities", icon: "💡", color: "#A855F7" },
+      { id: "entertain", name: "Entertainment", icon: "🎬", color: "#F59E0B" },
+    ]);
 
     // 3) Budgets (MONTHLY)
     const budgets = [
-      { categoryId: "groceries", amount: 300, alertThreshold: 80 },
-      { categoryId: "transport", amount: 120, alertThreshold: 75 },
-      { categoryId: "rent", amount: 1200, alertThreshold: 90 },
-      { categoryId: "utilities", amount: 200, alertThreshold: 80 },
-      { categoryId: "entertain", amount: 150, alertThreshold: 70 },
+      {
+        categoryId: "groceries",
+        periodType: "MONTHLY",
+        amount: 300,
+        alertThreshold: 80,
+      },
+      {
+        categoryId: "transport",
+        periodType: "WEEKLY",
+        amount: 120,
+        alertThreshold: 75,
+      },
+      {
+        categoryId: "rent",
+        periodType: "YEARLY",
+        amount: 1200,
+        alertThreshold: 90,
+      },
+      {
+        categoryId: "utilities",
+        periodType: "MONTHLY",
+        amount: 200,
+        alertThreshold: 80,
+      },
+      {
+        categoryId: "entertain",
+        periodType: "WEEKLY",
+        amount: 150,
+        alertThreshold: 70,
+      },
     ];
 
     for (const b of budgets) {
-      await db`
-      INSERT INTO "Budget"(id, userId, categoryId, periodType, amount, alertThreshold)
-      VALUES (${crypto.randomUUID()}, ${userId}, ${
-        b.categoryId
-      }, ${"MONTHLY"}, ${b.amount}, ${b.alertThreshold})
-      ON CONFLICT (userId, categoryId, periodType) DO UPDATE
-        SET amount = EXCLUDED.amount, alertThreshold = EXCLUDED.alertThreshold
-    `;
+      await db.insert(budgetsTable).values({
+        id: crypto.randomUUID(),
+        userId,
+        categoryId: b.categoryId,
+        periodType: b.periodType as "MONTHLY" | "WEEKLY" | "YEARLY",
+        amount: b.amount.toFixed(2),
+        alertThreshold: b.alertThreshold,
+      });
     }
 
     // 4) Sample expenses
@@ -84,13 +119,17 @@ export const seed = async (db: ReturnType<typeof postgres>) => {
     ];
 
     for (const e of expenses) {
-      await db`
-      INSERT INTO "Expense"(id, userId, categoryId, amount, description, spentAt)
-      VALUES (${crypto.randomUUID()}, ${userId}, ${e.categoryId}, ${
-        e.amount
-      }, ${e.description}, ${e.spentAt})
-      ON CONFLICT DO NOTHING
-    `;
+      await db
+        .insert(expenseTable)
+        .values({
+          id: crypto.randomUUID(),
+          userId,
+          categoryId: e.categoryId,
+          amount: e.amount.toFixed(2),
+          description: e.description,
+          spentAt: e.spentAt,
+        })
+        .onConflictDoNothing();
     }
 
     console.log(`Seed complete for user ${email} (id=${userId})`);

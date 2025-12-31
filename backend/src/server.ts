@@ -1,17 +1,13 @@
 import app from "./app";
-import getDb from "./config/db";
-import { initialize } from "./config/initializeDb";
 import { seed } from "./config/seed";
+import { env } from "./config/env";
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = env.PORT;
 
-const sql = await getDb();
-
-// await initialize(sql);
-
+// Seed the database if SEED=true
 
 if ((process.env.SEED ?? "false").toLowerCase() === "true") {
-  await seed(sql);
+  await seed();
 }
 
 app.listen(PORT, () => {

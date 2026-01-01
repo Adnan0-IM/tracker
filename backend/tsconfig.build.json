@@ -2,6 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
+    "module": "nodenext",
     "outDir": "dist",
     "allowImportingTsExtensions": false
   },

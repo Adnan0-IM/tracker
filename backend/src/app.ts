@@ -11,6 +11,10 @@ const app = express();
 // Global middleware
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.send("<h3>Expense Tracker Api</h3>");
+});
+
 // Health
 app.get("/health", (_req, res) => res.json({ ok: true }));
 

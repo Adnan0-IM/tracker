@@ -19,7 +19,12 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
   const token = authHeader.split(" ")[1];
 
   if (!token) return res.sendStatus(401);
-  const payload = await verifyToken(token);
-  req.userId = (payload as any).id;
-  next();
+
+  try {
+    const payload = await verifyToken(token);
+    req.userId = (payload as any).id;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
 };

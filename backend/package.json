@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "build": "bun build --target=bun --outdir=dist src/server.ts ",
+    "vercel-build": "bun build --target=bun --outdir=dist api/index.ts ",
     "start": "bun dist/server.js",
     "dev": "bun run --watch --bun src/server.ts"
   },

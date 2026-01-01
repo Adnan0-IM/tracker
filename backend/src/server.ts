@@ -1,4 +1,4 @@
-import app from "./app";
+import app from "./index";
 import { seed } from "./config/seed";
 import { env } from "./config/env";
 

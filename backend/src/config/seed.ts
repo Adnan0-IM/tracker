@@ -5,8 +5,9 @@ import {
   categoriesTable,
   expenseTable,
 } from "../db/schema";
-
 import { db } from "../db/db";
+import { eq } from "drizzle-orm";
+
 export const seed = async () => {
   try {
     // 1) Demo user (use env to override)
@@ -14,31 +15,44 @@ export const seed = async () => {
     const email = process.env.SEED_USER_EMAIL ?? "demo@example.com";
     const password = process.env.SEED_USER_PASSWORD ?? "demo123"; // replace with a hash in production
 
-    const [u] = await db
-      .insert(usersTable)
-      .values({
-        name,
-        email,
-        password,
-      })
-      .returning();
+    // Try to reuse existing user to avoid unique-constraint failures
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
 
-    // If your client returns objects:
-    const userId = u?.id;
+    let userId = existing?.id;
+    if (!userId) {
+      const [u] = await db
+        .insert(usersTable)
+        .values({ name, email, password })
+        .returning();
+      userId = u?.id;
+    }
+
     if (!userId) {
       throw new Error("Failed to create or retrieve demo user");
     }
 
-    // 2) Categories
-    await db.insert(categoriesTable).values([
-      { id: "groceries", name: "Groceries", icon: "🛒", color: "#34D399" },
-      { id: "transport", name: "Transport", icon: "🚗", color: "#3B82F6" },
-      { id: "rent", name: "Rent", icon: "🏠", color: "#F43F5E" },
-      { id: "utilities", name: "Utilities", icon: "💡", color: "#A855F7" },
-      { id: "entertain", name: "Entertainment", icon: "🎬", color: "#F59E0B" },
-    ]);
+    // 2) Categories (id is PK) – ignore duplicates
+    await db
+      .insert(categoriesTable)
+      .values([
+        { id: "groceries", name: "Groceries", icon: "🛒", color: "#34D399" },
+        { id: "transport", name: "Transport", icon: "🚗", color: "#3B82F6" },
+        { id: "rent", name: "Rent", icon: "🏠", color: "#F43F5E" },
+        { id: "utilities", name: "Utilities", icon: "💡", color: "#A855F7" },
+        {
+          id: "entertain",
+          name: "Entertainment",
+          icon: "🎬",
+          color: "#F59E0B",
+        },
+      ])
+      .onConflictDoNothing();
 
-    // 3) Budgets (MONTHLY)
+    // 3) Budgets (may duplicate across runs since id is random)
     const budgets = [
       {
         categoryId: "groceries",
@@ -135,9 +149,9 @@ export const seed = async () => {
     console.log(`Seed complete for user ${email} (id=${userId})`);
   } catch (err) {
     console.error("Seed failed:", err);
-    process.exit(1);
+    // Do not exit; allow server to start
+    throw err;
   } finally {
-    // Optional: close the pool
     try {
       await (db as any).end?.({ timeout: 5 });
     } catch {}

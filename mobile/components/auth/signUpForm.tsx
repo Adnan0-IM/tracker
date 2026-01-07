@@ -31,7 +31,7 @@ export default function SignUpForm({
           <View className="relative">
             <TextInput
               className="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4  text-text-main-light dark:text-white font-display"
-              placeholder="Ada Lovelace"
+              placeholder="Adnan Iliyasu"
               placeholderTextColor={activeTheme.placeholder}
               onChangeText={(text) =>
                 setFormData((prev) => ({ ...prev, name: text }))
@@ -58,7 +58,7 @@ export default function SignUpForm({
           <View className="relative">
             <TextInput
               className="bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-4 text-text-main-light dark:text-white font-display"
-              placeholder="you@example.com"
+              placeholder="adnan@example.com"
               placeholderTextColor={activeTheme.placeholder}
               keyboardType="email-address"
               autoCapitalize="none"

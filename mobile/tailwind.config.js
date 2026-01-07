@@ -12,6 +12,9 @@ module.exports = {
         "background-dark": "#102216",
         "surface-dark": "#1c271f",
         "border-dark": "#3b5443",
+        "border-light": "#e2e8f0",
+        "text-main-light": "#0f172a",
+        "text-muted-light": "#64748b",
         "text-muted": "#9db9a6",
       },
       fontFamily: {

@@ -3,15 +3,43 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Header } from "@/components/auth/header";
 import SignUpForm from "@/components/auth/signUpForm";
-import SubmitButton from "@/components/auth/submitButton";
 import SocialSignIn from "@/components/auth/social-signIn";
 import SignInFooter from "@/components/auth/footer";
 import { useSession } from "@/components/ctx";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import React, { useState } from "react";
 
+export type FormDataType = {
+  name: string;
+  email: string;
+  password: string;
+};
 export default function SignUp() {
-  const { signIn } = useSession();
+  const { signUp } = useSession();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState<FormDataType>({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState<string | null>(null);
 
+  async function handleSubmit() {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await signUp(formData.name, formData.email, formData.password);
+    } catch (error: any) {
+      console.log("Failed to sign-up", error);
+      setError(
+        error?.response?.data?.message ||
+          (error as Error).message ||
+          "Failed to sign up"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
   return (
     <KeyboardAwareScrollView
       keyboardShouldPersistTaps="handled"
@@ -32,21 +60,24 @@ export default function SignUp() {
         </View>
         {/* title  Sign Up */}
         <Header title="Sign Up" />
+        {error && (
+          <Text className="text-red-500 font-semibold text-center">
+            {error}
+          </Text>
+        )}
         {/* card container form */}
         <Animated.View
           entering={FadeInDown.delay(200).duration(1000).springify()}
           style={{ width: "100%" }}
         >
-          <SignUpForm />
+          <SignUpForm
+            isLoading={isSubmitting}
+            handleSubmit={handleSubmit}
+            formData={formData}
+            setFormData={setFormData}
+          />
         </Animated.View>
-        {/* submit */}
 
-        <Animated.View
-          entering={FadeInDown.delay(400).duration(1000).springify()}
-          style={{ width: "100%" }}
-        >
-          <SubmitButton text="Create Account" />
-        </Animated.View>
         {/* social  */}
 
         <Animated.View

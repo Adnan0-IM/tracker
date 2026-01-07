@@ -3,14 +3,41 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Header } from "@/components/auth/header";
 import SignInForm from "@/components/auth/signInForm";
-import SubmitButton from "@/components/auth/submitButton";
 import SocialSignIn from "@/components/auth/social-signIn";
 import SignInFooter from "@/components/auth/footer";
 import { useSession } from "@/components/ctx";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { useState } from "react";
 
+export type FormDataType = {
+  email: string;
+  password: string;
+};
 export default function SignIn() {
   const { signIn } = useSession();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState<FormDataType>({
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await signIn(formData.email, formData.password);
+    } catch (error: any) {
+      console.log("Failed to sign-in", error);
+      setError(
+        error?.response?.data?.message ||
+          (error as Error).message ||
+          "Failed to sign in"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <KeyboardAwareScrollView
@@ -33,23 +60,22 @@ export default function SignIn() {
 
         {/* title Sign In  */}
         <Header title="Sign In" />
-
+        {error && (
+          <Text className="text-red-500 font-semibold text-center">
+            {error}
+          </Text>
+        )}
         {/* card container form  */}
         <Animated.View
           entering={FadeInDown.delay(200).duration(1000).springify()}
           style={{ width: "100%" }}
         >
-          <View className="w-full">
-            <SignInForm />
-          </View>
-        </Animated.View>
-
-        {/* submit  */}
-        <Animated.View
-          entering={FadeInDown.delay(400).duration(1000).springify()}
-          style={{ width: "100%" }}
-        >
-          <SubmitButton text="Sign In" />
+          <SignInForm
+            isLoading={isSubmitting}
+            handleSubmit={handleSubmit}
+            formData={formData}
+            setFormData={setFormData}
+          />
         </Animated.View>
 
         {/* social  */}

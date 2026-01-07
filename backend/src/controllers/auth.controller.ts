@@ -57,20 +57,27 @@ export const signIn = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password)
-    return res.status(400).json({ message: "Email or password is incorrect" });
+    return res.status(400).json({ message: "Email and password are required" });
 
   try {
+    const emailNorm = String(email).toLowerCase().trim();
+
     const [user] = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.email, email));
+      .where(eq(usersTable.email, emailNorm));
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res
+        .status(401)
+        .json({ message: "Email or password is incorrect" });
 
-    const isValid = await comparePassword(password, user?.password);
+    const isValid = await comparePassword(password, user.password);
 
     if (!isValid)
-      return res.status(401).json({ error: "Invalid creadentials" });
+      return res
+        .status(401)
+        .json({ message: "Email or password is incorrect" });
 
     const token = getToken(user.id);
 
